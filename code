@@ -1,1 +1,50 @@
+data <- dummy_data
 
+library(tidyverse)
+
+# Convert timestamp to date format
+data$timestamp <- as.Date(data$timestamp)
+
+# Create binary variables for February and March
+data$februari <- ifelse(format(data$timestamp, "%m") == "02", 1, 0)
+data$maart <- ifelse(format(data$timestamp, "%m") == "03", 1, 0)
+
+# Filter for automotive industry and NL country
+df_filtered_plastic_surgery <- data %>% filter(industry == "plastic-surgery", country == "nl")
+
+# Delete duplicates
+#df_filtered_airlines <- df_filtered_airlines[!duplicated(df_filtered_airlines$keyword), ]
+
+# Calculate share of search for each brand in februari and maart
+df_share_plastic_surgery <- df_filtered_plastic_surgery %>% 
+  group_by(keyword) %>% 
+  summarise(total_search_feb = sum(search_volume * februari),
+            total_search_mar = sum(search_volume * maart)) %>% 
+  mutate(share_search_feb = total_search_feb/sum(total_search_feb),
+         share_search_mar = total_search_mar/sum(total_search_mar)) %>%
+  ungroup()%>%
+  slice_max(n = 10, order_by = share_search_mar) # Select only the top 10 brands
+
+# Filter for brands that have search in february or march
+df_share_plastic_surgery <- df_share_plastic_surgery %>% 
+  filter(share_search_feb > 0 | share_search_mar > 0)
+
+# Arrange by descending share of search in March
+df_share_plastic_surgery <- df_share_plastic_surgery %>% 
+  arrange(desc(share_search_mar))
+
+# Create horizontal bar chart
+ggplot(df_share_plastic_surgery, aes(x = reorder(keyword, share_search_mar), y = share_search_mar)) +
+  geom_bar(stat = "identity", fill = "#FDB813", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(share_search_mar*100, 1), "%")), vjust = 0, size = 3, nudge_y = 0.005) +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.05)), labels = scales::percent_format()) +
+  scale_x_discrete() +
+  labs(y = "Share of search", x = "Brand", title = "Top 10 plastic surgery brands in the Netherlands: March 2023") +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        panel.grid.major.y = element_line(colour = "gray", linetype = "dashed", size = 0.5),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(size = 1.2)) +
+  coord_flip()
