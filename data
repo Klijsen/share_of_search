@@ -1,1 +1,6 @@
-
+set.seed(123)
+dummy_data <- data.frame(country = sample(c("be", "nl", "de"), 20, replace = TRUE),
+                         keyword = c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+                                            "K","L","M","N","O","P","Q","R","S","T"),
+                         search_volume = sample(0:100, 20, replace = TRUE),
+                         industry = sample(c("plastic-surgery", "automotive"), 20, replace = TRUE))
